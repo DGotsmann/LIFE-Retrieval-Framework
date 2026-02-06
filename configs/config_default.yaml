@@ -12,6 +12,8 @@ RUN SETTINGS:
   n_layers: 100
   log_top_pressure: -6
   live_points: 600
+  sampling_efficiency: 0.8
+  tolerance: 0.5
 
 CHEMICAL COMPOSITION PARAMETERS:
   condensation: False

@@ -116,6 +116,8 @@ if __name__ == "__main__":
             outputfiles_basename=str(pyret_ship.settings["output_folder"]) + "/",
             n_live_points=pyret_ship.settings["live_points"],
             verbose=True,
+            sampling_efficiency=pyret_ship.settings["sampling_efficiency"],
+            evidence_tolerance=pyret_ship.settings["tolerance"],
         )
         
     # # Chosen sampler not found
