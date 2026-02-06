@@ -16,6 +16,8 @@ import numpy as np
 from typing import Union
 from pathlib import Path
 from numpy import ndarray
+from scipy.interpolate import PchipInterpolator
+from astropy import constants as const
 
 
 # -----------------------------------------------------------------------------
@@ -46,25 +48,23 @@ def assign_priors(dictionary: dict) -> dict:
         elif prior_kind == "log-gaussian":
             dictionary[parameter]["prior"]["function"] = log_gaussian_prior
         elif prior_kind == "fourth-uniform":
-            dictionary[parameter]["prior"][
-                "function"
-            ] = fourth_power_uniform_prior
+            dictionary[parameter]["prior"]["function"] = fourth_power_uniform_prior
         elif prior_kind == "third-uniform":
-            dictionary[parameter]["prior"][
-                "function"
-            ] = third_power_uniform_prior
+            dictionary[parameter]["prior"]["function"] = third_power_uniform_prior
         elif prior_kind == "second-uniform":
-            dictionary[parameter]["prior"][
-                "function"
-            ] = second_power_uniform_prior
+            dictionary[parameter]["prior"]["function"] = second_power_uniform_prior
+        elif prior_kind == "2d-uniform":
+            dictionary[parameter]["prior"]["function"] = twod_uniform_prior
         elif prior_kind == "custom":
-            dictionary[parameter]["prior"]["function"] = custom_prior
-
-            dictionary[parameter]["prior"]["prior_specs"][
-                "prior_data"
-            ] = read_custom_prior(
-                dictionary[parameter]["prior"]["prior_specs"]["prior_path"]
-            )
+            raise ValueError(
+                f"Custom prior selected for {parameter} not currently implemented. Please choose another valid prior! "
+                f"Exiting the run..."
+                )
+        #     dictionary[parameter]["prior"]["function"] = custom_prior
+        
+        #     dictionary[parameter]["prior"]["prior_specs"]["prior_data"] = read_custom_prior(
+        #         dictionary[parameter]["prior"]["prior_specs"]["prior_path"]
+        #     )
         else:
             raise ValueError(
                 f"{parameter} does not have a valid prior. Please! choose a valid prior! "
@@ -217,6 +217,29 @@ def second_power_uniform_prior(r: float, prior_specs: dict) -> float:
         "upper": prior_specs["second_upper"],
     }
     return np.sign(uniform_prior(r, prior_fourth))*np.power(uniform_prior(r, prior_fourth), 2)
+
+
+def twod_uniform_prior(r: float, R_pl: int) -> float:
+    """
+    Scales a random number generated in a uniform prior between 0 and 1 to the respective value corresponding to a
+    uniform prior ranged between the allowed mass values allowed by the current radius assigned prior.
+    This function is only used for M_pl. Formula taken from Zeng et al. (2016) doi.org/10.3847/0004-637X/819/2/127.
+
+    :param r: A random float generated from the uniform prior between [0, 1].
+    :param R_pl: The radius of the Planet in Earth radii.
+    :return: A random number generated from a uniform prior between [x1, x2].
+    """
+    # defining the lower and upper bounds for the mass-radius relation
+    # values from Zeng et al. (2016), table 2
+    masses = np.array([0.125,0.25,0.5,1.0,2.0,4.0,8.0,16.0,32.0])
+    R100Fe =  np.array([0.445,0.55,0.676,0.823,0.99,1.176,1.38,1.59,1.82])
+    R100H2O = np.array([0.776,0.952,1.163,1.41,1.71,2.05,2.45,2.9,3.36])
+    lowerf = PchipInterpolator(R100Fe, masses)
+    upperf = PchipInterpolator(R100H2O, masses)
+    
+    x1 = lowerf(R_pl/const.R_earth.cgs.value)
+    x2 = upperf(R_pl/const.R_earth.cgs.value)
+    return (x1 + r * (x2 - x1)) * const.M_earth.cgs.value
 
 
 def custom_prior(r: float, prior_specs: dict) -> float:

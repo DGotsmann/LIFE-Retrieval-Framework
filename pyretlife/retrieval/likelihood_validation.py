@@ -40,6 +40,13 @@ def validate_cube_finite(cube: list) -> bool:
     else:
         return False
 
+def validate_positive_mass(phys_vars: dict) -> bool:
+    if 'M_pl' in phys_vars:
+        if phys_vars['M_pl'] <= 0.:
+            return True
+        else:
+            return False
+    return False
 
 def validate_positive_temperatures(temp: ndarray) -> bool:
     if any((temp < 0).tolist()):
@@ -74,7 +81,6 @@ def validate_sum_of_abundances(abundances_VMR: dict) -> bool:
         return True
     else:
         return False
-
 
 def validate_spectrum_goodness(flux: ndarray) -> bool:
     if np.sum(np.isnan(flux)) > 0:

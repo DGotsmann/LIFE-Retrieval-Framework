@@ -63,6 +63,7 @@ from pyretlife.retrieval.configuration_ingestion import (
 from pyretlife.retrieval.likelihood_validation import (
     validate_pt_profile,
     validate_cube_finite,
+    validate_positive_mass,
     validate_positive_temperatures,
     validate_sum_of_abundances,
     validate_spectrum_goodness,
@@ -291,10 +292,30 @@ class RetrievalObject:
 
     def unity_cube_to_prior_space(self, cube):
         cube_copy = cube.copy()
+        M_is_in = False
+        R_pl = None
+        idx_M_pl = None
+
         for par in self.parameters.keys():
-            prior = self.parameters[par]["prior"]
             idx = list(self.parameters.keys()).index(par)
+            if par == "M_pl":
+                M_is_in = True
+                idx_M_pl = idx
+                continue
+            prior = self.parameters[par]["prior"]
             cube_copy[idx] = prior["function"](cube_copy[idx], prior["prior_specs"])
+            if par == "R_pl":
+                R_pl = cube_copy[idx]
+
+        if M_is_in: #Need to treat M separately to allow for 2D prior
+            prior = self.parameters['M_pl']["prior"]
+            if prior['kind'] == '2d-uniform':
+                if R_pl is None:
+                    R_pl = self.knowns['R_pl']['input_truth']
+                cube_copy[idx_M_pl] = prior["function"](cube_copy[idx_M_pl], R_pl)
+            else:
+                cube_copy[idx_M_pl] = prior["function"](cube_copy[idx_M_pl], prior["prior_specs"])
+
         return cube_copy
 
     def assign_cube_to_parameters(self, cube):
@@ -485,6 +506,9 @@ class RetrievalObject:
             return -1e99
         if validate_cube_finite(cube):
             return -1e99
+        if validate_positive_mass(self.phys_vars):
+            return -1e99
+        
         
         self.phys_vars = calculate_gravity(self.phys_vars,self.config)
 
