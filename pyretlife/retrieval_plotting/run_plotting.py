@@ -616,7 +616,9 @@ class retrieval_plotting_object(RetrievalObject):
             print('Saved calculated Bond albedos in '+self.results_directory+'Plots_New/Ret_Bond_Albedo.pkl.\n')
 
         # add the bond albedo to the parameters and the posterior
-        self.posteriors['T_eq'], self.posteriors['A_b'] = results['T_eq'], results['A_b'] 
+        n_rows = len(self.posteriors)
+        self.posteriors['T_eq'] = results['T_eq'][:n_rows]
+        self.posteriors['A_b'] = results['A_b'][:n_rows] 
         self.parameters = add_secondary_parameter_to_parameters(self.parameters,name='T_eq',unit=u.K,title='$\mathrm{T_{eq,\,Planet}}$',true_value=true_equilibrium_temperature)
         self.parameters = add_secondary_parameter_to_parameters(self.parameters,name='A_b',unit=u.dimensionless_unscaled,title='$\mathrm{A_{B,\,Planet}}$',true_value=true_bond_albedo)
 
@@ -697,7 +699,8 @@ class retrieval_plotting_object(RetrievalObject):
         '''
 
         # take the surface gravityfrom the spectrum calculation
-        self.posteriors['g'] = self.retrieved_gravity
+        n_rows = len(self.posteriors)
+        self.posteriors['g'] = self.retrieved_gravity[:n_rows]
 
         # add the bond albedo to the parameters
         self.parameters = add_secondary_parameter_to_parameters(self.parameters,name='g',unit=u.cm/u.s/u.s,title='$\mathrm{g}$',true_value=true_gravity)
@@ -724,7 +727,8 @@ class retrieval_plotting_object(RetrievalObject):
         '''
 
         # take the temperature in the lowest layer of the retrieved P-T profiles
-        self.posteriors['T_0'] = self.retrieved_temperatures[:,-1]
+        n_rows = len(self.posteriors)
+        self.posteriors['T_0'] = self.retrieved_temperatures[:n_rows,-1]
 
         # add the bond albedo to the parameters
         self.parameters = add_secondary_parameter_to_parameters(self.parameters,name='T_0',unit=u.K,title='$\mathrm{T_{0}}$',true_value=true_surface_temperature)
