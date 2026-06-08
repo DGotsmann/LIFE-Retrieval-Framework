@@ -539,6 +539,29 @@ def calculate_abundances(chem_vars: dict, press: ndarray, settings: dict) -> Tup
             else:
                 abundances[molecule] = np.ones_like(press) * chem_vars[molecule]
 
+    for molecule, profile in settings.items():
+        if isinstance(profile, dict) and profile.get("parameterization") == "polynomial":
+            polynomial_coefficients = {}
+            for key, value in profile.items():
+                if not key.startswith("a_"):
+                    continue
+                if isinstance(value, dict):
+                    if "truth" in value:
+                        coeff = value["truth"]
+                    else:
+                        raise RuntimeError(
+                            f"Polynomial coefficient {key} for {molecule} has no 'truth' entry"
+                        )
+                else:
+                    coeff = value
+                polynomial_coefficients[key] = float(coeff)
+
+            abundances[molecule] = np.maximum(calculate_polynomial_profile(
+                press, polynomial_coefficients
+            ), 0.0)
+            # this is all a little ugly and can probably be cleaned up
+
+
     if settings['abundance_units']=='MMR':
         inert = calculate_inert(abundances)
         mmw = calculate_mmw_MMR(abundances, settings, inert)
