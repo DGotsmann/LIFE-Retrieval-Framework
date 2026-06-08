@@ -533,11 +533,11 @@ def calculate_abundances(chem_vars: dict, press: ndarray, settings: dict) -> Tup
     abundances = {}
 
     for molecule in chem_vars.keys():
-        if 'Drying' not in molecule:
-            if isinstance(chem_vars[molecule], (list, np.ndarray)):
-                abundances[molecule] = np.array(chem_vars[molecule])
-            else:
-                abundances[molecule] = np.ones_like(press) * chem_vars[molecule]
+        if 'Drying' not in molecule:
+            if isinstance(chem_vars[molecule], (list, np.ndarray)):
+                abundances[molecule] = np.array(chem_vars[molecule])
+            else:
+                abundances[molecule] = np.ones_like(press) * chem_vars[molecule]
 
     if settings['abundance_units']=='MMR':
         inert = calculate_inert(abundances)
