@@ -97,7 +97,7 @@ def set_log_ground_pressure(
     return phys_vars
 
 
-def calculate_polynomial_profile(pressure: ndarray, temp_vars: dict) -> ndarray:
+def calculate_polynomial_profile(pressure: ndarray, temp_vars: dict, molecule: str = "a") -> ndarray:
     """
     Calculate a polynomial temperature profile.
 
@@ -115,14 +115,18 @@ def calculate_polynomial_profile(pressure: ndarray, temp_vars: dict) -> ndarray:
         np.polyval(
             np.array(
                 [
-                    temp_vars["a_" + str(len(temp_vars) - 1 - i)]
+                    temp_vars[molecule + "_" + str(len(temp_vars) - 1 - i)]
                     for i in range(len(temp_vars))
                 ]
             ),
             np.log10(pressure),
         )
     )
-    return temperature # np.maximum(temperature,0.01)
+    if (np.min(temperature) <= 0) and (np.max(temperature) > 0):
+        print(
+            "WARNING: The polynomial profile has negative values. Negative values are replaced with a small positive value."
+        )
+    return np.maximum(temperature, 0.000001)
 
 
 def calculate_spline_profile(pressure: ndarray, temp_vars: dict, phys_vars: dict, settings: dict) -> ndarray:
@@ -543,9 +547,12 @@ def calculate_abundances(chem_vars: dict, press: ndarray, settings: dict) -> Tup
         if isinstance(profile, dict) and profile.get("parameterization") == "polynomial":
             polynomial_coefficients = {}
             for key, value in profile.items():
-                if not key.startswith("a_"):
+                if not key.startswith(molecule + "_"):
                     continue
-                if isinstance(value, dict):
+                # Check if the coefficient is in chem_vars first (from retrieval)
+                if key in chem_vars:
+                    coeff = chem_vars[key]
+                elif isinstance(value, dict):
                     if "truth" in value:
                         coeff = value["truth"]
                     else:
@@ -557,7 +564,7 @@ def calculate_abundances(chem_vars: dict, press: ndarray, settings: dict) -> Tup
                 polynomial_coefficients[key] = float(coeff)
 
             abundances[molecule] = np.maximum(calculate_polynomial_profile(
-                press, polynomial_coefficients
+                press, polynomial_coefficients, molecule=molecule
             ), 0.0)
             # this is all a little ugly and can probably be cleaned up
 

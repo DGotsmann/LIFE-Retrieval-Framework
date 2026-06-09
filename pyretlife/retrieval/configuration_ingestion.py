@@ -228,6 +228,38 @@ def populate_dictionaries(
                 else:
                     settings[subsection] = config[section][subsection]
 
+                # Handle polynomial parameterization for nested parameters
+                if (
+                    type(config[section][subsection]) is dict
+                    and "parameterization" in config[section][subsection].keys()
+                    and config[section][subsection]["parameterization"] == "polynomial"
+                ):
+                    for nested_key, nested_value in config[section][subsection].items():
+                        if nested_key.startswith(subsection + "_"):
+                            if type(nested_value) is dict:
+                                if "prior" in nested_value.keys():
+                                    parameters[nested_key] = nested_value
+                                    if not "truth" in nested_value.keys():
+                                        parameters[nested_key]["truth"] = None
+                                    if "unit" in nested_value.keys():
+                                        input_unit = u.Unit(nested_value["unit"])
+                                    else:
+                                        input_unit = units.return_units(
+                                            nested_key, units.std_input_units
+                                        )
+                                    parameters[nested_key]["unit"] = input_unit
+                                    parameters[nested_key]["type"] = section
+                                elif "truth" in nested_value.keys():
+                                    knowns[nested_key] = nested_value
+                                    if "unit" in nested_value.keys():
+                                        input_unit = u.Unit(nested_value["unit"])
+                                    else:
+                                        input_unit = units.return_units(
+                                            nested_key, units.std_input_units
+                                        )
+                                    knowns[nested_key]["unit"] = input_unit
+                                    knowns[nested_key]["type"] = section
+
                 # read lists if available. Can be a str or list.
                 if (
                     type(config[section][subsection]) is dict
